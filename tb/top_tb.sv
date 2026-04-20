@@ -1,41 +1,64 @@
 `include "src/top.sv"
-`timescale 1ns/1ps         // Set tick to 1ns. Set sim resolution to 1ps.
-
-/**
- * Note:
- *  The TB below is only an example of a testbench written in SV.
- *  Adapt this for your lab assignments as you see fit.
- *  An example clk signal has been added to show what a signal decl and usage looks like.
- *     You are welcome to delete the clk signal if it's not needed.
- *     For instance, purely combinational circuits do not need clks.
- *     So for labs without sequential elements, you can remove them.
- */
+`include "src/debouncer.sv"
+`timescale 1ns/1ps
 
 module top_tb;
 
-/** declare tb signals below */
-logic clk_tb;
+    // signals
+    logic clk_tb = 1'b0;
+    logic btn_tb = 1'b0;
+    logic led_tb;
 
-/** declare module(s) below */
-top dut                    // declare an inst of top called "dut" (device under test)
-(
-    /** hook up tb signals to dut signals */
-    .clk(clk_tb)           // connect dut's clk wire to clk_tb
-);
+    // We override DEBOUNCE_THRESHOLD to a small number for simulation.
+    // A setting of 10 means the button must be stable for 10 clock cycles.
+    localparam THRESHOLD = 10;
 
-localparam CLK_PERIOD = /** clk period */;
-always #(CLK_PERIOD/2) clk_tb=~clk_tb;          // toggle clk_tb every #(CLK_PERIOD/2) ticks
+    // DUT instantiation
+    top #(.DEBOUNCE_THRESHOLD(THRESHOLD)) dut (
+        .clk (clk_tb),
+        .btn (btn_tb),
+        .led (led_tb)
+    );
 
-initial begin
-    $dumpfile("build/top.vcd"); // intermediate file for waveform generation
-    $dumpvars(0, top_tb);       // capture all signals under top_tb
-end
+    // Clock: 40 ns period (25 MHz for iCESugar-Pro)
+    localparam CLK_PERIOD = 40;
+    always #(CLK_PERIOD/2) clk_tb = ~clk_tb;
 
-initial begin
-    /** testbench logic goes below */
-    clk_tb<=1'b1;       // sets clk_tb to 1
-    #(CLK_PERIOD*3);    // waits for CLK_PERIOD * 3 ticks
-    $finish;            // end simulation, otherwise it runs indefinitely
-end
+    initial begin
+        $dumpfile("build/top.vcd");
+        $dumpvars(0, top_tb);
+
+        // 1. Reset Phase
+        repeat(5) @(posedge clk_tb);
+        $display("t=%0t | Start: LED=%b (expect 0)", $time, led_tb);
+
+        // 2. GLITCH TEST: Press button for only 3 cycles (shorter than THRESHOLD=10)
+        $display("t=%0t | Injecting 3-cycle glitch...", $time);
+        btn_tb = 1'b1;
+        repeat(3) @(posedge clk_tb);
+        btn_tb = 1'b0;
+        repeat(15) @(posedge clk_tb); 
+        $display("t=%0t | After glitch: LED=%b (expect 0 - glitch should be ignored)", $time, led_tb);
+
+        // 3. VALID PRESS: Press button for 20 cycles (longer than THRESHOLD=10)
+        $display("t=%0t | Performing valid press...", $time);
+        btn_tb = 1'b1;
+        repeat(20) @(posedge clk_tb);
+        $display("t=%0t | Button held. LED=%b (expect 0 - waiting for release)", $time, led_tb);
+        
+        btn_tb = 1'b0;
+        repeat(20) @(posedge clk_tb); // Wait for debouncer to see the release
+        $display("t=%0t | After release: LED=%b (expect 1)", $time, led_tb);
+
+        // 4. ANOTHER PRESS: Toggle it back OFF
+        $display("t=%0t | Toggling OFF...", $time);
+        btn_tb = 1'b1;
+        repeat(20) @(posedge clk_tb);
+        btn_tb = 1'b0;
+        repeat(20) @(posedge clk_tb);
+        $display("t=%0t | Final State: LED=%b (expect 0)", $time, led_tb);
+
+        $finish;
+    end
 
 endmodule
