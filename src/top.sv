@@ -89,11 +89,11 @@ module top #(
     logic [7:0] seg7;
 
     decoder dec_inst (
-        .val1(duty_cycle),
+        .val1(sw[0] ? duty_cycle_2 : duty_cycle),
         .seg7(seg7)
     );
 
     assign seg = {seg7[0], seg7[1], seg7[2], seg7[3], seg7[4], seg7[5], seg7[6]};
-    assign dp  = seg7[7];
+    assign dp  = sw[0];
 
 endmodule
