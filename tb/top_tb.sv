@@ -15,9 +15,15 @@ module top_tb;
 
     // DUT instantiation
     top #(.DEBOUNCE_THRESHOLD(THRESHOLD)) dut (
-        .clk (clk_tb),
-        .btn (btn_tb),
-        .led (led_tb)
+        .clk  (clk_tb),
+        .btn1 (btn_tb),
+        .btn2 (1'b0),
+        .sw   (4'b0000),
+        .seg  (),
+        .dp   (),
+        .led_r(),
+        .led_g(led_tb),
+        .led_b()
     );
 
     // Clock: 40 ns period (25 MHz for iCESugar-Pro)

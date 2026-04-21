@@ -6,7 +6,7 @@
 	gtkwave build/$*.vcd
 
 %.bit: src/%.sv
-	yosys -p "synth_ecp5 -json build/$*.json" $^
+	yosys -p "synth_ecp5 -json build/$*.json" src/*.sv
 	nextpnr-ecp5 --25k --package CABGA256 --speed 6 --json build/$*.json --textcfg build/$*.cfg --lpf $*.lpf --freq 65
 	ecppack --svf build/$*.svf build/$*.cfg build/$@
 	
