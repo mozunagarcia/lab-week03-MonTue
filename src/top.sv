@@ -82,7 +82,7 @@ module top #(
     end
 
     assign led_r = (pwm_counter < duty_cycle) ? 1'b1 : 1'b0;
-    assign led_g = (pwm_counter < duty_cycle_2) ? 1'b1 : 1'b0;
+    assign led_g = 1'b0;
     assign led_b = (pwm_counter < duty_cycle_2) ? 1'b1 : 1'b0;
 
     // display duty_cycle on 7-segment via Lab 2 decoder
